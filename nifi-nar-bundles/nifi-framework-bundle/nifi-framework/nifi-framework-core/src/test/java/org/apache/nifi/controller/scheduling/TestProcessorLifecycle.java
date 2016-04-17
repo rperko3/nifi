@@ -66,7 +66,9 @@ import org.apache.nifi.provenance.MockProvenanceEventRepository;
 import org.apache.nifi.util.NiFiProperties;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,18 +80,23 @@ public class TestProcessorLifecycle {
 
     private static final Logger logger = LoggerFactory.getLogger(TestProcessorLifecycle.class);
 
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
     @Before
     public void before() {
         System.setProperty("nifi.properties.file.path", "src/test/resources/nifi.properties");
         NiFiProperties.getInstance().setProperty(NiFiProperties.ADMINISTRATIVE_YIELD_DURATION, "1 sec");
         NiFiProperties.getInstance().setProperty(NiFiProperties.STATE_MANAGEMENT_CONFIG_FILE, "target/test-classes/state-management.xml");
         NiFiProperties.getInstance().setProperty(NiFiProperties.STATE_MANAGEMENT_LOCAL_PROVIDER_ID, "local-provider");
+        NiFiProperties.getInstance().setProperty(NiFiProperties.FLOWFILE_REPOSITORY_DIRECTORY, temporaryFolder.getRoot().getAbsolutePath() + "/flowfile_repo");
+        NiFiProperties.getInstance().setProperty(NiFiProperties.REPOSITORY_CONTENT_PREFIX + "default", temporaryFolder.getRoot().getAbsolutePath() + "/content_repo");
     }
 
     @After
     public void after() throws Exception {
-        FileUtils.deleteDirectory(new File("./target/test-repo"));
-        FileUtils.deleteDirectory(new File("./target/content_repository"));
+        FileUtils.deleteDirectory(new File(temporaryFolder.getRoot().getAbsolutePath() + "/flowfile_repo"));
+        FileUtils.deleteDirectory(new File(temporaryFolder.getRoot().getAbsolutePath() + "/content_repo"));
     }
 
     @Test
@@ -98,7 +105,7 @@ public class TestProcessorLifecycle {
         ProcessGroup testGroup = fc.createProcessGroup(UUID.randomUUID().toString());
         this.setControllerRootGroup(fc, testGroup);
         final ProcessorNode testProcNode = fc.createProcessor(TestProcessor.class.getName(),
-                UUID.randomUUID().toString());
+            UUID.randomUUID().toString());
 
         assertEquals(ScheduledState.STOPPED, testProcNode.getScheduledState());
         assertEquals(ScheduledState.STOPPED, testProcNode.getPhysicalScheduledState());
@@ -121,7 +128,7 @@ public class TestProcessorLifecycle {
         ProcessGroup testGroup = fc.createProcessGroup(UUID.randomUUID().toString());
         this.setControllerRootGroup(fc, testGroup);
         final ProcessorNode testProcNode = fc.createProcessor(TestProcessor.class.getName(),
-                UUID.randomUUID().toString());
+            UUID.randomUUID().toString());
         testProcNode.setProperty("P", "hello");
         assertEquals(ScheduledState.STOPPED, testProcNode.getScheduledState());
         assertEquals(ScheduledState.STOPPED, testProcNode.getPhysicalScheduledState());
@@ -710,7 +717,7 @@ public class TestProcessorLifecycle {
         properties.setProperty("nifi.remote.input.secure", "");
 
         return FlowController.createStandaloneInstance(mock(FlowFileEventRepository.class), properties,
-                mock(UserService.class), mock(AuditService.class), null);
+            mock(UserService.class), mock(AuditService.class), null);
     }
 
     /**
@@ -747,7 +754,7 @@ public class TestProcessorLifecycle {
         private final List<String> operationNames = new LinkedList<>();
 
         void setScenario(Runnable onScheduleCallback, Runnable onUnscheduleCallback, Runnable onStopCallback,
-                Runnable onTriggerCallback) {
+                         Runnable onTriggerCallback) {
             this.onScheduleCallback = onScheduleCallback;
             this.onUnscheduleCallback = onUnscheduleCallback;
             this.onStopCallback = onStopCallback;
@@ -758,7 +765,7 @@ public class TestProcessorLifecycle {
         public void schedule(ProcessContext ctx) {
             this.operationNames.add("@OnScheduled");
             if (this.generateExceptionOnScheduled
-                    && this.onScheduledExceptionCount++ < this.keepFailingOnScheduledTimes) {
+                && this.onScheduledExceptionCount++ < this.keepFailingOnScheduledTimes) {
                 throw new RuntimeException("Intentional");
             }
             this.onScheduleCallback.run();
@@ -779,26 +786,26 @@ public class TestProcessorLifecycle {
         @Override
         protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
             PropertyDescriptor PROP = new PropertyDescriptor.Builder()
-                    .name("P")
-                    .description("Blah Blah")
-                    .required(true)
-                    .addValidator(new Validator() {
-                        @Override
-                        public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
-                            return new ValidationResult.Builder().subject(subject).input(value).valid(value != null && !value.isEmpty()).explanation(subject + " cannot be empty").build();
-                        }
-                    })
-                    .build();
+                .name("P")
+                .description("Blah Blah")
+                .required(true)
+                .addValidator(new Validator() {
+                    @Override
+                    public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
+                        return new ValidationResult.Builder().subject(subject).input(value).valid(value != null && !value.isEmpty()).explanation(subject + " cannot be empty").build();
+                    }
+                })
+                .build();
 
             PropertyDescriptor SERVICE = new PropertyDescriptor.Builder()
-                    .name("S")
-                    .description("Blah Blah")
-                    .required(true)
-                    .identifiesControllerService(ITestservice.class)
-                    .build();
+                .name("S")
+                .description("Blah Blah")
+                .required(true)
+                .identifiesControllerService(ITestservice.class)
+                .build();
 
-            return this.withService ? Arrays.asList(new PropertyDescriptor[] { PROP, SERVICE })
-                    : Arrays.asList(new PropertyDescriptor[] { PROP });
+            return this.withService ? Arrays.asList(new PropertyDescriptor[]{PROP, SERVICE})
+                : Arrays.asList(new PropertyDescriptor[]{PROP});
         }
 
         @Override
@@ -869,7 +876,9 @@ public class TestProcessorLifecycle {
             this.delayLimit = delayLimit;
             this.randomDelay = randomDelay;
         }
+
         Random random = new Random();
+
         @Override
         public void run() {
             try {
