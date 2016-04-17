@@ -44,7 +44,9 @@ import org.apache.nifi.stream.io.StreamUtils;
 import org.apache.nifi.util.NiFiProperties;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
@@ -54,15 +56,17 @@ import ch.qos.logback.core.read.ListAppender;
 
 public class TestFileSystemRepository {
 
-    public static final int NUM_REPO_SECTIONS = 1;
+    @Rule
+    public TemporaryFolder rootTestFolder = new TemporaryFolder();
 
     public static final File helloWorldFile = new File("src/test/resources/hello.txt");
 
     private FileSystemRepository repository = null;
-    private final File rootFile = new File("target/content_repository");
+    private File rootFile;
 
     @Before
     public void setup() throws IOException {
+        rootFile = new File(rootTestFolder.getRoot().getAbsolutePath() + "/content_repository");
         System.setProperty(NiFiProperties.PROPERTIES_FILE_PATH, "src/test/resources/nifi.properties");
         if (rootFile.exists()) {
             DiskUtils.deleteRecursively(rootFile);
