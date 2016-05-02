@@ -450,11 +450,12 @@ public class PutKafka extends AbstractProcessor {
         properties.setProperty("acks", context.getProperty(DELIVERY_GUARANTEE).getValue());
         properties.setProperty("buffer.memory", String.valueOf(context.getProperty(MAX_BUFFER_SIZE).asDataSize(DataUnit.B).longValue()));
         properties.setProperty("compression.type", context.getProperty(COMPRESSION_CODEC).getValue());
-        if (context.getProperty(MESSAGE_DELIMITER).isSet()) {
-            properties.setProperty("batch.size", context.getProperty(BATCH_NUM_MESSAGES).getValue());
-        } else {
-            properties.setProperty("batch.size", "1");
-        }
+        properties.setProperty("batch.size", context.getProperty(BATCH_NUM_MESSAGES).getValue());
+//        if (context.getProperty(MESSAGE_DELIMITER).isSet()) {
+//            properties.setProperty("batch.size", context.getProperty(BATCH_NUM_MESSAGES).getValue());
+//        } else {
+//            properties.setProperty("batch.size", "1");
+//        }
 
         properties.setProperty("client.id", context.getProperty(CLIENT_NAME).getValue());
         Long queueBufferingMillis = context.getProperty(QUEUE_BUFFERING_MAX).asTimePeriod(TimeUnit.MILLISECONDS);
